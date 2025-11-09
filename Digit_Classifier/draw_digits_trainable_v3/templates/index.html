@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MNIST Digit Classifier</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        #canvas {
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            cursor: crosshair;
+            display: block;
+            margin: 0 auto 20px;
+            background: black;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        button:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        select, input[type="range"] {
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            font-size: 14px;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        .training-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .training-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .status-badge {
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        
+        .status-badge.ready {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-badge.untrained {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-badge.training {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .status-text {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+            min-height: 20px;
+        }
+        
+        .accuracy-text {
+            color: #28a745;
+            font-weight: bold;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        
+        .prediction-output {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .prediction-digit {
+            font-size: 72px;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .probabilities {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .prob-item {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .prob-digit {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .prob-value {
+            color: #667eea;
+            font-size: 14px;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-weight: 600;
+        }
+        
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .probabilities {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 MNIST Digit Classifier</h1>
+        
+        <div class="main-grid">
+            <!-- Drawing Canvas Section -->
+            <div class="card">
+                <h2>Draw a Digit</h2>
+                <canvas id="canvas" width="280" height="280"></canvas>
+                
+                <div class="controls">
+                    <button onclick="clearCanvas()">Clear</button>
+                    <button onclick="invertCanvas()">Invert</button>
+                    <label class="label" style="flex: 1; margin: 0;">
+                        Brush Size: <span id="brushSizeLabel">10</span>px
+                        <input type="range" id="brushSize" min="5" max="30" value="10"
+                               oninput="updateBrushSize(this.value)">
+                    </label>
+                </div>
+                
+                <div class="controls">
+                    <label class="label" style="margin: 0;">
+                        Model:
+                        <select id="modelSelect">
+                            <option value="model1">Model1 (SGD/Logistic)</option>
+                            <option value="model2">Model2 (Keras CNN)</option>
+                        </select>
+                    </label>
+                    <button id="predictBtn" onclick="predict()" style="flex: 1;">🔮 Predict</button>
+                </div>
+                
+                <div id="predictionOutput" class="prediction-output" style="display: none;">
+                    <h3 style="margin-bottom: 10px; color: #333;">Prediction Result</h3>
+                    <div class="prediction-digit" id="predictionDigit">-</div>
+                    <div class="probabilities" id="probabilities"></div>
+                </div>
+                
+                <div id="predictionError" class="error-message" style="display: none;"></div>
+            </div>
+            
+            <!-- Training Section -->
+            <div class="card">
+                <h2>Model Training</h2>
+                
+                <!-- Model 1 -->
+                <div class="training-section">
+                    <h3>
+                        Model 1: Scikit-learn (SGD)
+                        <span id="model1Status" class="status-badge untrained">Untrained</span>
+                    </h3>
+                    <button id="trainModel1Btn" onclick="trainModel('model1')">Train Model 1</button>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress1" style="width: 0%;">0%</div>
+                    </div>
+                    <div class="status-text" id="status1">Ready to train</div>
+                    <div class="accuracy-text" id="accuracy1"></div>
+                </div>
+                
+                <!-- Model 2 -->
+                <div class="training-section">
+                    <h3>
+                        Model 2: Keras CNN
+                        <span id="model2Status" class="status-badge untrained">Untrained</span>
+                    </h3>
+                    <button id="trainModel2Btn" onclick="trainModel('model2')">Train Model 2</button>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress2" style="width: 0%;">0%</div>
+                    </div>
+                    <div class="status-text" id="status2">Ready to train</div>
+                    <div class="accuracy-text" id="accuracy2"></div>
+                </div>
+                
+                <div style="margin-top: 20px; padding: 15px; background: #e7f3ff; border-radius: 8px; font-size: 14px; color: #004085;">
+                    <strong>Note:</strong> Training can take several minutes. Progress will update in real-time.
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+flask>=3.0.0
+numpy>=1.24.0
+pillow>=10.0.0
+scikit-learn>=1.3.0
+joblib>=1.3.0
+pandas>=2.0.0
+
+# Optional: Install TensorFlow for Model2 support
+# Uncomment and install if you want to use Model2 (Keras CNN)
+# For Apple Silicon (M1/M2/M3):
+# tensorflow-macos>=2.13.0
+# tensorflow-metal>=1.0.0

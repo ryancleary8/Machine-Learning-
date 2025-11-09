@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Draw & Compare Digits (Web)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#0b0f14; --panel:#10161d; --text:#e8eef5; --muted:#9fb0c3; --accent:#62a8ff; --border:#1d2732; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--text); }
+    header { padding:16px 20px; border-bottom:1px solid var(--border); background:linear-gradient(180deg,#0e141b,#0b0f14); }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 20px; display: grid; gap: 20px; grid-template-columns: 320px 1fr; }
+    .card { background: var(--panel); border:1px solid var(--border); border-radius: 12px; }
+    .card h3 { margin:0; padding: 14px 16px; border-bottom:1px solid var(--border); font-size: 14px; letter-spacing: .02em; color: var(--muted); }
+    .card .body { padding: 14px 16px; }
+    #canvas { background:#000; border-radius:10px; width:100%; height:320px; display:block; touch-action:none; }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap: wrap; }
+    button, select { background:#0f1720; color:var(--text); border:1px solid var(--border); border-radius:10px; padding:10px 12px; cursor:pointer; }
+    button:hover, select:hover { border-color:#2a3a4c; }
+    .digits button { width: 44px; text-align:center; }
+    .muted { color: var(--muted); font-size: 13px; }
+    .pred { font-size: 18px; font-weight: 600; color: var(--accent); }
+    .probs { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 13px; white-space: pre; }
+    canvas.chart { width: 100% !important; height: 320px !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap" style="grid-template-columns: 1fr;">
+      <div class="row" style="justify-content: space-between;">
+        <div><strong>Draw & Compare Digits</strong> <span class="muted">— HTML5 Canvas + Flask</span></div>
+        <div class="row">
+          <label class="muted">Active model:</label>
+          <select id="model"></select>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="card">
+      <h3>Canvas</h3>
+      <div class="body">
+        <canvas id="canvas" width="320" height="320"></canvas>
+        <div class="row" style="margin-top:10px;">
+          <button id="clearBtn">Clear</button>
+          <button id="invertBtn">Invert</button>
+          <label class="muted">Brush</label>
+          <input type="range" id="brush" min="4" max="36" value="18"/>
+          <button id="predictBtn">Predict</button>
+        </div>
+        <div style="margin-top:10px;">
+          <div>Prediction: <span id="pred" class="pred">—</span></div>
+          <div class="probs" id="probs"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Score & Accuracy</h3>
+      <div class="body">
+        <div class="row digits" style="margin-bottom:10px;">
+          <span class="muted">Mark TRUE label:</span>
+          <div id="digitButtons"></div>
+        </div>
+        <canvas id="chart" class="chart"></canvas>
+        <div class="muted" style="margin-top:8px;">Tip: Draw a digit, click <em>Predict</em>, then click the correct label to score it. Switch models from the header.</div>
+      </div>
+    </div>
+
+    <div class="card" style="grid-column: 1 / span 2;">
+      <h3>How it works</h3>
+      <div class="body muted">
+        The browser sends your canvas as a PNG to the Flask backend. The server converts it to an 8×8 grayscale
+        vector like scikit-learn’s digits dataset, then runs the selected model and returns a probability distribution.
+        Accuracy is tracked per model on the client side and charted with Chart.js.
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const MODEL_NAMES = {{ model_names|tojson }};
+  </script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
