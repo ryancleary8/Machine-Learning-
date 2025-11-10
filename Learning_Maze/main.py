@@ -16,15 +16,20 @@ from environment import GridWorld
 from agent_qlearning import QLearningAgent
 from agent_sarsa import SARSAAgent
 from agent_expected_sarsa import ExpectedSARSAAgent
+from agent_double_q import DoubleQLearningAgent
+from agent_dqn import DQNAgent, DoubleDQNAgent
 from visualize import (plot_rewards, plot_steps, show_q_heatmap,
                         plot_maze_with_path, plot_policy,
                         create_comprehensive_visualization)
 
 
 AGENT_REGISTRY = {
-    "q_learning": ("Q-Learning", QLearningAgent),
-    "sarsa": ("SARSA", SARSAAgent),
-    "expected_sarsa": ("Expected SARSA", ExpectedSARSAAgent),
+        "q_learning": {"label": "Q-Learning", "cls": QLearningAgent, "family": "tabular"},
+    "sarsa": {"label": "SARSA", "cls": SARSAAgent, "family": "tabular"},
+    "expected_sarsa": {"label": "Expected SARSA", "cls": ExpectedSARSAAgent, "family": "tabular"},
+    "double_q": {"label": "Double Q-Learning", "cls": DoubleQLearningAgent, "family": "tabular"},
+    "dqn": {"label": "Deep Q-Network", "cls": DQNAgent, "family": "dqn"},
+    "double_dqn": {"label": "Double DQN", "cls": DoubleDQNAgent, "family": "dqn"},
 }
 
 
@@ -37,7 +42,10 @@ def main():
     if algorithm_key not in AGENT_REGISTRY:
         raise ValueError(f"Unsupported agent algorithm: '{AGENT_ALGORITHM}'")
 
-    algorithm_label, agent_cls = AGENT_REGISTRY[algorithm_key]
+    registry_entry = AGENT_REGISTRY[algorithm_key]
+    algorithm_label = registry_entry["label"]
+    agent_cls = registry_entry["cls"]
+    agent_family = registry_entry["family"]
 
     print("=" * 70)
     print(f" {algorithm_label.upper()} GRID-WORLD MAZE SOLVER")
@@ -82,21 +90,49 @@ def main():
 
     print(f"    Selected Algorithm: {algorithm_label}")
 
-    agent = agent_cls(
-        env=env,
-        alpha=ALPHA,
-        gamma=GAMMA,
-        epsilon=EPSILON,
-        epsilon_decay=EPSILON_DECAY,
-        epsilon_min=EPSILON_MIN
-    )
+    if agent_family == "tabular":
+        agent = agent_cls(
+            env=env,
+            alpha=ALPHA,
+            gamma=GAMMA,
+            epsilon=EPSILON,
+            epsilon_decay=EPSILON_DECAY,
+            epsilon_min=EPSILON_MIN
+        )
+    elif agent_family == "dqn":
+        agent = agent_cls(
+            env=env,
+            alpha=DQN_LEARNING_RATE,
+            gamma=GAMMA,
+            epsilon=EPSILON,
+            epsilon_decay=EPSILON_DECAY,
+            epsilon_min=EPSILON_MIN,
+            batch_size=DQN_BATCH_SIZE,
+            buffer_size=DQN_BUFFER_SIZE,
+            target_update=DQN_TARGET_UPDATE,
+            hidden_units=DQN_HIDDEN_UNITS,
+        )
+    else:
+        raise ValueError(f"Unknown agent family '{agent_family}' for algorithm '{algorithm_key}'")
+        
+        
     
-    print(f"    Learning Rate (α): {ALPHA}")
+    if agent_family == "tabular":
+        print(f"    Learning Rate (α): {ALPHA}")
+    else:
+        print(f"    Learning Rate (α): {DQN_LEARNING_RATE}")
+        
     print(f"    Discount Factor (γ): {GAMMA}")
     print(f"    Initial Exploration Rate (ε): {EPSILON}")
     print(f"    Epsilon Decay: {EPSILON_DECAY}")
     print(f"    Minimum Epsilon: {EPSILON_MIN}")
-    print(f"    Q-Table Shape: {agent.q_table.shape}")
+    if hasattr(agent, "q_table"):
+        print(f"    Q-Table Shape: {agent.q_table.shape}")
+    if agent_family == "dqn":
+        print(f"    Neural Network Hidden Units: {DQN_HIDDEN_UNITS}")
+        print(f"    Replay Buffer Size: {DQN_BUFFER_SIZE}")
+        print(f"    Batch Size: {DQN_BATCH_SIZE}")
+        print(f"    Target Update Frequency: {DQN_TARGET_UPDATE} episodes")
 
     # Ensure results directory exists
     os.makedirs(RESULTS_DIR, exist_ok=True)

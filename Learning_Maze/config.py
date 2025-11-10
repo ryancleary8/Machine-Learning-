@@ -9,7 +9,8 @@ Stores all hyperparameters and environment settings in one place.
 import os
 
 # Algorithm Selection
-AGENT_ALGORITHM = "q_learning"  # Options: 'q_learning', 'sarsa', 'expected_sarsa'
+AGENT_ALGORITHM = "q_learning"  # Options: 'q_learning', 'sarsa', 'expected_sarsa',
+                                #          'double_q', 'dqn', 'double_dqn'
 
 # Directory for saving visualizations
 RESULTS_DIR = os.path.join("results", AGENT_ALGORITHM)
@@ -42,6 +43,13 @@ GAMMA = 0.95           # Discount factor (γ)
 EPSILON = 1.0          # Initial exploration rate (ε)
 EPSILON_DECAY = 0.995  # Epsilon decay per episode
 EPSILON_MIN = 0.01     # Minimum epsilon value
+
+# Deep RL Hyperparameters (used by neural-network based agents)
+DQN_LEARNING_RATE = 1e-3
+DQN_BATCH_SIZE = 64
+DQN_BUFFER_SIZE = 5000
+DQN_TARGET_UPDATE = 20  # Episodes between target network sync
+DQN_HIDDEN_UNITS = (128, 128)
 
 # Training Parameters
 EPISODES = 1000        # Number of training episodes
