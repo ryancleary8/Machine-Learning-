@@ -6,15 +6,26 @@ Main entry point for Q-Learning Grid-World Maze Solver.
 Ties together environment, agent, training, and visualization.
 """
 
+import os
+
 import numpy as np
 import matplotlib.pyplot as plt
 
 from config import *
 from environment import GridWorld
 from agent_qlearning import QLearningAgent
+from agent_sarsa import SARSAAgent
+from agent_expected_sarsa import ExpectedSARSAAgent
 from visualize import (plot_rewards, plot_steps, show_q_heatmap,
                         plot_maze_with_path, plot_policy,
                         create_comprehensive_visualization)
+
+
+AGENT_REGISTRY = {
+    "q_learning": ("Q-Learning", QLearningAgent),
+    "sarsa": ("SARSA", SARSAAgent),
+    "expected_sarsa": ("Expected SARSA", ExpectedSARSAAgent),
+}
 
 
 def main():
@@ -22,8 +33,14 @@ def main():
     Main execution function.
     Sets up environment, trains agent, and generates visualizations.
     """
+    algorithm_key = AGENT_ALGORITHM.lower()
+    if algorithm_key not in AGENT_REGISTRY:
+        raise ValueError(f"Unsupported agent algorithm: '{AGENT_ALGORITHM}'")
+
+    algorithm_label, agent_cls = AGENT_REGISTRY[algorithm_key]
+
     print("=" * 70)
-    print(" Q-LEARNING GRID-WORLD MAZE SOLVER")
+    print(f" {algorithm_label.upper()} GRID-WORLD MAZE SOLVER")
     print("=" * 70)
     
     # ========================================================================
@@ -60,10 +77,12 @@ def main():
     # ========================================================================
     # STEP 2: Initialize Q-Learning Agent
     # ========================================================================
-    print("\n[2] Initializing Q-Learning Agent")
+    print("\n[2] Initializing Agent")
     print("-" * 70)
-    
-    agent = QLearningAgent(
+
+    print(f"    Selected Algorithm: {algorithm_label}")
+
+    agent = agent_cls(
         env=env,
         alpha=ALPHA,
         gamma=GAMMA,
@@ -78,6 +97,10 @@ def main():
     print(f"    Epsilon Decay: {EPSILON_DECAY}")
     print(f"    Minimum Epsilon: {EPSILON_MIN}")
     print(f"    Q-Table Shape: {agent.q_table.shape}")
+
+    # Ensure results directory exists
+    os.makedirs(RESULTS_DIR, exist_ok=True)
+    print(f"    Results Directory: {os.path.abspath(RESULTS_DIR)}")
     
     # ========================================================================
     # STEP 3: Train Agent
@@ -147,35 +170,56 @@ def main():
     print("-" * 70)
     
     # Individual plots
-    plot_rewards(rewards_history, window=PLOT_WINDOW)
-    plot_steps(steps_history, window=PLOT_WINDOW)
-    show_q_heatmap(agent.q_table, env)
-    plot_policy(agent.q_table, env)
+    rewards_path = os.path.join(RESULTS_DIR, 'learning_curve.png')
+    steps_path = os.path.join(RESULTS_DIR, 'steps_curve.png')
+    heatmap_path = os.path.join(RESULTS_DIR, 'q_heatmap.png')
+    policy_path = os.path.join(RESULTS_DIR, 'policy.png')
+    test_path_file = os.path.join(RESULTS_DIR, 'test_path.png')
+    comprehensive_path = os.path.join(
+        RESULTS_DIR, f"{algorithm_key}_results.png"
+    )
+
+    plot_rewards(rewards_history, window=PLOT_WINDOW, save_path=rewards_path)
+    plot_steps(steps_history, window=PLOT_WINDOW, save_path=steps_path)
+    show_q_heatmap(agent.q_table, env, save_path=heatmap_path)
+    plot_policy(agent.q_table, env, save_path=policy_path)
     
     # Test path visualization
-    plot_maze_with_path(env, test_path,
-                       title='Test Episode (Greedy Policy)',
-                       save_path='test_path.png')
-    
+    plot_maze_with_path(
+        env,
+        test_path,
+        title='Test Episode (Greedy Policy)',
+        save_path=test_path_file,
+    )
+
     # Comprehensive visualization
     create_comprehensive_visualization(
-        env, agent, rewards_history, steps_history, paths_history
+        env,
+        agent,
+        rewards_history,
+        steps_history,
+        paths_history,
+        save_path=comprehensive_path,
     )
-    
+
     print("\n    Generated Files:")
-    print("      ✓ learning_curve.png")
-    print("      ✓ steps_curve.png")
-    print("      ✓ q_heatmap.png")
-    print("      ✓ policy.png")
-    print("      ✓ test_path.png")
-    print("      ✓ comprehensive_results.png")
+    generated_files = [
+        rewards_path,
+        steps_path,
+        heatmap_path,
+        policy_path,
+        test_path_file,
+        comprehensive_path,
+    ]
+    for file_path in generated_files:
+        print(f"      ✓ {os.path.relpath(file_path, RESULTS_DIR)}")
     
     # ========================================================================
     # STEP 7: Summary
     # ========================================================================
     print("\n[7] Summary")
     print("-" * 70)
-    print(f"    ✓ Successfully trained Q-Learning agent for {EPISODES} episodes")
+    print(f"    ✓ Successfully trained {algorithm_label} agent for {EPISODES} episodes")
     print(f"    ✓ Agent learned to navigate from {START_POS} to {GOAL_POS}")
     print(f"    ✓ Final performance: {final_avg_steps:.1f} steps (vs {initial_avg_steps:.1f} initially)")
     print(f"    ✓ All visualizations saved successfully")

@@ -6,6 +6,14 @@ Configuration file for Q-Learning Grid-World Maze.
 Stores all hyperparameters and environment settings in one place.
 """
 
+import os
+
+# Algorithm Selection
+AGENT_ALGORITHM = "q_learning"  # Options: 'q_learning', 'sarsa', 'expected_sarsa'
+
+# Directory for saving visualizations
+RESULTS_DIR = os.path.join("results", AGENT_ALGORITHM)
+
 # Environment Settings
 GRID_SIZE = (13, 13)
 START_POS = (0, 0)
