@@ -82,15 +82,17 @@ class SnakeEnvironment:
         return pos
     
     def _is_collision(self, pos):
-        """Check if position results in collision"""
+        """Check if position results in any collision"""
+        return self._collision_type(pos) != "none"
+
+    def _collision_type(self, pos):
+        """Return the collision type for a position"""
         x, y = pos
-        # Wall collision
         if x < 0 or x >= self.grid_size or y < 0 or y >= self.grid_size:
-            return True
-        # Self collision
+            return "wall"
         if pos in self.snake:
-            return True
-        return False
+            return "self"
+        return "none"
     
     def _turn_left(self):
         """Return the direction if turning left"""
@@ -121,8 +123,11 @@ class SnakeEnvironment:
         new_head = self._get_next_position(head, self.direction)
         
         # Check collision
-        if self._is_collision(new_head):
+        collision = self._collision_type(new_head)
+        if collision != "none":
             self.done = True
+            if collision == "self":
+                return self.get_state(), REWARD_SELF_COLLISION, True
             return self.get_state(), REWARD_DEATH, True
         
         # Add new head
@@ -130,9 +135,13 @@ class SnakeEnvironment:
         
         # Check if food eaten
         reward = REWARD_STEP
+        if action == 0:
+            reward += REWARD_STRAIGHT
         if new_head == self.food:
             self.score += 1
             reward = REWARD_FOOD
+            if action == 0:
+                reward += REWARD_STRAIGHT
             self.food = self._place_food()
         else:
             # Remove tail if no food eaten

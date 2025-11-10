@@ -11,6 +11,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'agents'))
 from agents.qlearning import QLearningAgent
 from agents.sarsa import SARSAAgent
 from agents.dqn import DQNAgent
+from agents.a_star import AStarAgent
+from agents.ppo import PPOAgent
 
 def load_agent(algorithm, state_size, action_size):
     """Load the selected algorithm agent"""
@@ -20,6 +22,10 @@ def load_agent(algorithm, state_size, action_size):
         return SARSAAgent(state_size, action_size)
     elif algorithm == "DQN":
         return DQNAgent(state_size, action_size)
+    elif algorithm == "A_STAR":
+        return AStarAgent(state_size, action_size)
+    elif algorithm == "PPO":
+        return PPOAgent(state_size, action_size)
     else:
         raise ValueError(f"Unknown algorithm: {algorithm}")
 
@@ -38,9 +44,11 @@ def train_mode():
     env = SnakeEnvironment(GRID_SIZE)
     state_size = len(env.get_state())
     action_size = 3  # straight, left, right
-    
+
     # Load agent
     agent = load_agent(ALGORITHM, state_size, action_size)
+    if hasattr(agent, "set_environment"):
+        agent.set_environment(env)
     
     # Optional: Initialize visualizer
     visualizer = None
@@ -55,6 +63,8 @@ def train_mode():
             # Training with visualization (slower)
             for episode in range(EPISODES):
                 state = env.reset()
+                if hasattr(agent, "set_environment"):
+                    agent.set_environment(env)
                 total_reward = 0
                 steps = 0
                 
@@ -100,6 +110,8 @@ def train_mode():
             scores, steps = agent.training_scores, agent.training_steps
         else:
             # Training without visualization (faster)
+            if hasattr(agent, "set_environment"):
+                agent.set_environment(env)
             scores, steps = agent.train(env, EPISODES)
         
         # Save the trained agent
@@ -134,9 +146,11 @@ def play_mode():
     env = SnakeEnvironment(GRID_SIZE)
     state_size = len(env.get_state())
     action_size = 3
-    
+
     # Load agent
     agent = load_agent(ALGORITHM, state_size, action_size)
+    if hasattr(agent, "set_environment"):
+        agent.set_environment(env)
     
     # Load trained model
     load_path = f"saved_models/{ALGORITHM}_{DIFFICULTY}.pkl"
@@ -160,6 +174,8 @@ def play_mode():
         
         while True:
             state = env.reset()
+            if hasattr(agent, "set_environment"):
+                agent.set_environment(env)
             
             while not env.done:
                 if not visualizer.render(env, env.score, f"Game {games_played + 1}"):
