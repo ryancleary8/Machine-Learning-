@@ -6,6 +6,9 @@ Main entry point for Q-Learning Grid-World Maze Solver.
 Ties together environment, agent, training, and visualization.
 """
 
+import numpy as np
+import matplotlib.pyplot as plt
+
 from config import *
 from environment import GridWorld
 from agent_qlearning import QLearningAgent

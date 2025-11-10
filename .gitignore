@@ -28,3 +28,6 @@ allfiles
 *.joblib
 *.zip
 *.tar.gz
+
+# Generated plots
+q_learning_maze/*.png

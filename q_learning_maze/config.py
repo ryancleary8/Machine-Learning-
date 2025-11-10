@@ -7,9 +7,9 @@ Stores all hyperparameters and environment settings in one place.
 """
 
 # Environment Settings
-GRID_SIZE = (10, 10)
+GRID_SIZE = (13, 13)
 START_POS = (0, 0)
-GOAL_POS = (9, 9)
+GOAL_POS = (12, 12)
 
 # Define obstacles (walls) as list of (row, col) tuples
 OBSTACLES = [
@@ -20,7 +20,7 @@ OBSTACLES = [
     (2, 1), (2, 2), (2, 3), (2, 4),
     (7, 5), (7, 6), (7, 7), (7, 8),
     # Additional obstacles
-    (4, 5), (5, 5), (5, 1)
+    (4, 5), (5, 5), (5, 1), (8,9), (7,9), (9,10)
 ]
 
 # Reward Structure
