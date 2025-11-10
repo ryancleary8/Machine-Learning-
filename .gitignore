@@ -7,3 +7,17 @@ __pycache__/
 *.pyc
 .DS_Store
 allfiles
+env/
+.venv/
+venv/
+__pycache__/
+*.ipynb_checkpoints/
+*.DS_Store
+*.csv
+*.parquet
+*.h5
+*.pt
+*.pkl
+*.joblib
+*.zip
+*.tar.gz
