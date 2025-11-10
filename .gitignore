@@ -1,18 +1,25 @@
+# === Python virtual environments ===
 env/
+venv/
 .venv/
 .venv311/
-venv/
+
+# === Python cache & bytecode ===
 __pycache__/
-.ipynb_checkpoints/
 *.pyc
+*.pyo
+*.pyd
+
+# === Notebook junk ===
+.ipynb_checkpoints/
+
+# === OS / editor files ===
 .DS_Store
+.vscode/
+.idea/
+
+# === Project-specific large files ===
 allfiles
-env/
-.venv/
-venv/
-__pycache__/
-*.ipynb_checkpoints/
-*.DS_Store
 *.csv
 *.parquet
 *.h5
