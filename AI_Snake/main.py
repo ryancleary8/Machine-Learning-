@@ -8,9 +8,9 @@ from visualize import SnakeVisualizer, plot_training_progress
 
 # Import agents
 sys.path.append(os.path.join(os.path.dirname(__file__), 'agents'))
-from agents.agent_qlearning import QLearningAgent
-from agents.agent_sarsa import SARSAAgent
-from agents.agent_dqn import DQNAgent
+from agents.qlearning import QLearningAgent
+from agents.sarsa import SARSAAgent
+from agents.dqn import DQNAgent
 
 def load_agent(algorithm, state_size, action_size):
     """Load the selected algorithm agent"""
