@@ -5,6 +5,7 @@ from .sarsa import SARSAAgent
 from .dqn import DQNAgent
 from .a_star import AStarAgent
 from .ppo import PPOAgent
+from .best_agent import BestAgent
 
 __all__ = [
     "QLearningAgent",
@@ -12,4 +13,5 @@ __all__ = [
     "DQNAgent",
     "AStarAgent",
     "PPOAgent",
+    "BestAgent",
 ]

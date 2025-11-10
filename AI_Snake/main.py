@@ -13,6 +13,8 @@ from agents.sarsa import SARSAAgent
 from agents.dqn import DQNAgent
 from agents.a_star import AStarAgent
 from agents.ppo import PPOAgent
+from agents.best_agent import BestAgent
+
 
 def load_agent(algorithm, state_size, action_size):
     """Load the selected algorithm agent"""
@@ -26,6 +28,8 @@ def load_agent(algorithm, state_size, action_size):
         return AStarAgent(state_size, action_size)
     elif algorithm == "PPO":
         return PPOAgent(state_size, action_size)
+    elif algorithm == "BEST":
+        return BestAgent(state_size, action_size)
     else:
         raise ValueError(f"Unknown algorithm: {algorithm}")
 

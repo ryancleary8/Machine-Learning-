@@ -1,7 +1,7 @@
 # config.py - Central configuration for Snake AI Learning Simulator
 
 # Algorithm Selection
-ALGORITHM = "SARSA"  # Options: Q_LEARNING, SARSA, DQN, A_STAR, PPO
+ALGORITHM = "Q_LEARNING"  # Options: Q_LEARNING, SARSA, DQN, A_STAR, PPO, BEST
 
 # Difficulty Settings
 DIFFICULTY = "HARD"  # Options: EASY, MEDIUM, HARD
@@ -21,7 +21,7 @@ GAME_SPEED = {
 }[DIFFICULTY]
 
 # Learning Parameters
-LEARNING_RATE = 0.1
+LEARNING_RATE = 1e-3
 DISCOUNT_FACTOR = 0.9
 EPSILON_START = 1.0
 EPSILON_MIN = 0.01
@@ -40,7 +40,7 @@ REWARD_STRAIGHT = 0.2
 
 # DQN Specific Parameters
 BATCH_SIZE = 64
-MEMORY_SIZE = 10000
+MEMORY_SIZE = 100000
 TARGET_UPDATE_FREQ = 10
 
 # PPO Specific Parameters

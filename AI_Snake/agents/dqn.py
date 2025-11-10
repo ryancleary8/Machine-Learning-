@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from config import *
+from collections import deque
 
 # Import neural network and replay memory
 import sys
@@ -19,7 +20,12 @@ class DQNAgent:
     def __init__(self, state_size, action_size):
         self.state_size = state_size
         self.action_size = action_size
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if torch.cuda.is_available():
+            self.device = torch.device("cuda")
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            self.device = torch.device("mps")
+        else:
+            self.device = torch.device("cpu")
         
         # Q-Networks
         self.policy_net = DQNNetwork(state_size, action_size).to(self.device)
@@ -29,6 +35,13 @@ class DQNAgent:
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=LEARNING_RATE)
         self.memory = ReplayMemory(MEMORY_SIZE)
         
+        self.criterion = nn.SmoothL1Loss()  # Huber loss
+        self.grad_clip_norm = 10.0
+        self.learning_starts = 5000
+        self.train_every = 4
+        self.tau = 0.01  # Polyak averaging coefficient for soft target updates
+        self.target_update_steps = None  # set to an int for optional hard updates by step
+        
         # Hyperparameters
         self.epsilon = EPSILON_START
         self.epsilon_min = EPSILON_MIN
@@ -37,56 +50,90 @@ class DQNAgent:
         self.batch_size = BATCH_SIZE
         self.target_update_freq = TARGET_UPDATE_FREQ
         
+        self.eps_start = EPSILON_START
+        self.eps_end = EPSILON_MIN
+        self.eps_decay_frames = 100000
+        
         self.training_scores = []
         self.training_steps = []
         self.steps_done = 0
         
+    def current_epsilon(self):
+        t = min(self.steps_done, self.eps_decay_frames)
+        frac = 1.0 - (t / self.eps_decay_frames)
+        return self.eps_end + (self.eps_start - self.eps_end) * frac
+
+    def soft_update(self, tau=None):
+        """Soft-update target net towards policy net (Polyak averaging)."""
+        if tau is None:
+            tau = self.tau
+        for tp, pp in zip(self.target_net.parameters(), self.policy_net.parameters()):
+            tp.data.copy_(tau * pp.data + (1.0 - tau) * tp.data)
+
     def choose_action(self, state):
-        """Epsilon-greedy action selection"""
-        if random.random() < self.epsilon:
+        """Epsilon-greedy action selection with step-based epsilon and eval/train modes."""
+        eps = self.current_epsilon()
+        if random.random() < eps:
             return random.randint(0, self.action_size - 1)
-        
+
+        self.policy_net.eval()
         with torch.no_grad():
-            state_tensor = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+            state_tensor = torch.as_tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
             q_values = self.policy_net(state_tensor)
-            return q_values.argmax().item()
+            action = q_values.argmax(dim=1).item()
+        self.policy_net.train()
+        return action
     
     def update(self, state, action, reward, next_state, done):
-        """Store transition and train network"""
+        """Store transition and train network (Double DQN, Huber loss, soft target updates)."""
+        # Optional reward clipping for stability
+        if reward is not None:
+            reward = float(max(min(reward, 1.0), -1.0))
+
         # Store transition in replay memory
         self.memory.push(state, action, reward, next_state, done)
         self.steps_done += 1
-        
-        # Only train if enough samples in memory
-        if len(self.memory) < self.batch_size:
+
+        # Gating: wait for sufficient experience and train every N steps
+        if len(self.memory) < self.learning_starts or (self.steps_done % self.train_every) != 0:
             return
-        
+
         # Sample batch from memory
         batch = self.memory.sample(self.batch_size)
         states, actions, rewards, next_states, dones = zip(*batch)
-        
+
         # Convert to tensors
-        states = torch.FloatTensor(np.array(states)).to(self.device)
-        actions = torch.LongTensor(actions).to(self.device)
-        rewards = torch.FloatTensor(rewards).to(self.device)
-        next_states = torch.FloatTensor(np.array(next_states)).to(self.device)
-        dones = torch.FloatTensor(dones).to(self.device)
-        
-        # Compute current Q values
-        current_q_values = self.policy_net(states).gather(1, actions.unsqueeze(1))
-        
-        # Compute target Q values
+        states      = torch.as_tensor(np.array(states), dtype=torch.float32, device=self.device)
+        actions     = torch.as_tensor(actions, dtype=torch.long, device=self.device).unsqueeze(1)   # [B,1]
+        rewards     = torch.as_tensor(rewards, dtype=torch.float32, device=self.device)            # [B]
+        next_states = torch.as_tensor(np.array(next_states), dtype=torch.float32, device=self.device)
+        dones       = torch.as_tensor(dones, dtype=torch.float32, device=self.device)              # [B]
+
+        # Current Q(s,a)
+        q_pred = self.policy_net(states).gather(1, actions).squeeze(1)  # [B]
+
+        # Double DQN target: select via policy net, evaluate via target net
         with torch.no_grad():
-            next_q_values = self.target_net(next_states).max(1)[0]
-            target_q_values = rewards + (1 - dones) * self.discount_factor * next_q_values
-        
-        # Compute loss
-        loss = nn.MSELoss()(current_q_values.squeeze(), target_q_values)
-        
-        # Optimize the model
+            next_q_policy = self.policy_net(next_states)                               # [B, A]
+            next_actions = next_q_policy.argmax(dim=1, keepdim=True)                   # [B,1]
+            next_q_target = self.target_net(next_states).gather(1, next_actions).squeeze(1)  # [B]
+            q_target = rewards + (1.0 - dones) * self.discount_factor * next_q_target # [B]
+
+        # Loss (Huber)
+        loss = self.criterion(q_pred, q_target)
+
+        # Optimize
         self.optimizer.zero_grad()
         loss.backward()
+        nn.utils.clip_grad_norm_(self.policy_net.parameters(), self.grad_clip_norm)
         self.optimizer.step()
+
+        # Target network updates
+        self.soft_update(self.tau)  # soft update every optimization step
+
+        # Optional hard update by steps if configured
+        if self.target_update_steps is not None and (self.steps_done % self.target_update_steps) == 0:
+            self.target_net.load_state_dict(self.policy_net.state_dict())
     
     def train(self, env, episodes):
         """Train the agent"""
@@ -104,13 +151,6 @@ class DQNAgent:
                 total_reward += reward
                 steps += 1
             
-            # Update target network
-            if (episode + 1) % self.target_update_freq == 0:
-                self.target_net.load_state_dict(self.policy_net.state_dict())
-            
-            # Decay epsilon
-            self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
-            
             self.training_scores.append(env.score)
             self.training_steps.append(steps)
             
@@ -120,7 +160,7 @@ class DQNAgent:
                       f"Avg Score: {avg_score:.2f}, "
                       f"Score: {env.score}, "
                       f"Steps: {steps}, "
-                      f"Epsilon: {self.epsilon:.3f}, "
+                      f"Epsilon: {self.current_epsilon():.3f}, "
                       f"Memory Size: {len(self.memory)}")
         
         return self.training_scores, self.training_steps
