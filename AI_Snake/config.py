@@ -4,7 +4,7 @@
 ALGORITHM = "Q_LEARNING"  # Options: Q_LEARNING, SARSA, DQN
 
 # Difficulty Settings
-DIFFICULTY = "MEDIUM"  # Options: EASY, MEDIUM, HARD
+DIFFICULTY = "HARD"  # Options: EASY, MEDIUM, HARD
 
 # Grid sizes based on difficulty
 GRID_SIZE = {
@@ -28,7 +28,7 @@ EPSILON_MIN = 0.01
 EPSILON_DECAY = 0.995
 
 # Training Parameters
-EPISODES = 500
+EPISODES = 5000
 MAX_STEPS_PER_EPISODE = 1000
 
 # Reward Structure

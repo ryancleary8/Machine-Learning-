@@ -10,7 +10,7 @@ from config import *
 # Import neural network and replay memory
 import sys
 sys.path.append('..')
-from utils.model import DQNNetwork
+from utils.dqn_model import DQNNetwork
 from utils.replay_memory import ReplayMemory
 
 class DQNAgent:

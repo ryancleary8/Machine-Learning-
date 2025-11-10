@@ -1,4 +1,4 @@
-# utils/model.py - Neural Network for DQN
+# utils/dqn_model.py - Neural Network for DQN
 
 import torch
 import torch.nn as nn

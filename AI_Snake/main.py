@@ -64,7 +64,7 @@ def train_mode():
                 
                 while not env.done and steps < MAX_STEPS_PER_EPISODE:
                     # Render every N episodes
-                    if episode % 10 == 0:
+                    if episode % 1000 == 0:
                         if not visualizer.render(env, env.score, episode):
                             raise KeyboardInterrupt
                     
